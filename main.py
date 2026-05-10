@@ -9,6 +9,7 @@ from pyrogram.errors import UserNotParticipant
 import os
 import random
 import string
+import asyncio
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 API_ID = int(os.getenv("API_ID"))
@@ -237,16 +238,24 @@ async def upload(client, message):
 # SAVE MEDIA
 # =========================
 
-@app.on_message(filters.media)
+@app.on_message(
+    filters.photo |
+    filters.video |
+    filters.document |
+    filters.audio |
+    filters.animation
+)
 async def save_media(client, message):
 
     user_id = message.from_user.id
 
-    # AUTO SESSION
     if user_id not in user_uploads:
         user_uploads[user_id] = []
 
     try:
+
+        # ANTI FLOOD
+        await asyncio.sleep(1)
 
         copied = await message.copy(
             chat_id=DB_CHANNEL
@@ -274,7 +283,7 @@ async def save_media(client, message):
         )
 
         await message.reply_text(
-            f"✅ Media berhasil ditambahkan\n\n📦 Total media sekarang: {total}",
+            f"✅ Media berhasil disimpan\n\n📦 Total media: {total}",
             reply_markup=buttons
         )
 
@@ -282,7 +291,7 @@ async def save_media(client, message):
 
         await message.reply_text(
             f"❌ Gagal menyimpan media\n\n{e}"
-        )
+)
 
 # =========================
 # CALLBACK BUTTONS
@@ -297,7 +306,60 @@ async def callbacks(client, callback_query):
 
         joined = await check_join(client, user_id)
 
-        if joined:
+        if jo@app.on_message(
+    filters.photo |
+    filters.video |
+    filters.document |
+    filters.audio |
+    filters.animation
+)
+async def save_media(client, message):
+
+    user_id = message.from_user.id
+
+    if user_id not in user_uploads:
+        user_uploads[user_id] = []
+
+    try:
+
+        # ANTI FLOOD
+        await asyncio.sleep(1)
+
+        copied = await message.copy(
+            chat_id=DB_CHANNEL
+        )
+
+        user_uploads[user_id].append(copied.id)
+
+        total = len(user_uploads[user_id])
+
+        buttons = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "➕ Tambah Media",
+                        callback_data="add_media"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "✅ Buat Code",
+                        callback_data="make_code"
+                    )
+                ]
+            ]
+        )
+
+        await message.reply_text(
+            f"✅ Media berhasil disimpan\n\n📦 Total media: {total}",
+            reply_markup=buttons
+        )
+
+    except Exception as e:
+
+        await message.reply_text(
+            f"❌ Gagal menyimpan media\n\n{e}"
+    )ined:
 
             buttons = InlineKeyboardMarkup(
                 [
@@ -500,21 +562,70 @@ async def send_page(client, message, media_ids, page, code):
 
     current_media = media_ids[start:end]
 
-    for msg_id in current_media:
+    total_pages = (len(media_ids) + 9) // 10
+
+    # =========================
+    # SEND 10 MEDIA
+    # =========================
+
+    for index, msg_id in enumerate(current_media, start=1):
+
+        caption = (
+            f"📦 File {start + index}\n"
+            f"🤖 Powered By @{(await client.get_me()).username}\n"
+            f"🔗 Share Bot Ke Teman Kamu"
+        )
 
         await client.copy_message(
             chat_id=message.chat.id,
             from_chat_id=DB_CHANNEL,
-            message_id=msg_id
+            message_id=msg_id,
+            caption=caption
         )
 
-    total_pages = (len(media_ids) + 9) // 10
+    # =========================
+    # BUTTON PAGE STYLE CHINA
+    # =========================
+
+    buttons = []
 
     row = []
 
-    if page > 0:
+    for i in range(total_pages):
+
+        if i == page:
+
+            text = f"✅ {i+1}"
+
+        else:
+
+            text = f"☑️ {i+1}"
 
         row.append(
+            InlineKeyboardButton(
+                text,
+                callback_data=f"page_{code}_{i}"
+            )
+        )
+
+        # 5 tombol per baris
+        if len(row) == 5:
+
+            buttons.append(row)
+            row = []
+
+    if row:
+        buttons.append(row)
+
+    # =========================
+    # PREV NEXT
+    # =========================
+
+    nav = []
+
+    if page > 0:
+
+        nav.append(
             InlineKeyboardButton(
                 f"⬅️ Prev {page}",
                 callback_data=f"page_{code}_{page-1}"
@@ -523,19 +634,43 @@ async def send_page(client, message, media_ids, page, code):
 
     if page < total_pages - 1:
 
-        row.append(
+        nav.append(
             InlineKeyboardButton(
                 f"Next {page+2} ➡️",
                 callback_data=f"page_{code}_{page+1}"
             )
         )
 
-    if row:
+    if nav:
+        buttons.append(nav)
 
-        await message.reply_text(
-            f"✅ Menampilkan halaman {page+1}/{total_pages}\n\n📦 File {start+1}-{min(end, len(media_ids))}",
-            reply_markup=InlineKeyboardMarkup([row])
-        )
+    # =========================
+    # MENU BUTTON
+    # =========================
+
+    buttons.append(
+        [
+            InlineKeyboardButton(
+                "📤 Upload Lagi",
+                callback_data="menu_upload"
+            ),
+            InlineKeyboardButton(
+                "🆘 Menu",
+                callback_data="menu_help"
+            )
+        ]
+    )
+
+    # =========================
+    # SEND INFO
+    # =========================
+
+    await message.reply_text(
+        f"📦 Total File: {len(media_ids)}\n"
+        f"📄 Halaman: {page+1}/{total_pages}\n\n"
+        f"⬇️ Klik tombol angka di bawah untuk membuka halaman file.",
+        reply_markup=InlineKeyboardMarkup(buttons)
+)
 
 
 # =========================
