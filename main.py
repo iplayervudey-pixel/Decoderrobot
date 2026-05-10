@@ -2,7 +2,12 @@ from pyrogram import Client, filters, enums
 from pyrogram.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
-    BotCommand
+    BotCommand,
+    InputMediaPhoto,
+    InputMediaVideo,
+    InputMediaDocument,
+    InputMediaAudio,
+    InputMediaAnimation
 )
 from pyrogram.errors import FloodWait
 
@@ -17,7 +22,6 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
 
-# SUPPORT USERNAME / ID
 FORCE_CHANNEL = os.getenv("FORCE_CHANNEL")
 DB_CHANNEL = os.getenv("DB_CHANNEL")
 
@@ -41,6 +45,7 @@ app = Client(
 
 # ================= MEMORY =================
 user_uploads = {}
+upload_status_message = {}
 
 # ================= CHECK JOIN =================
 async def check_join(client, user_id):
@@ -162,7 +167,7 @@ async def help_cmd(client, message):
 5. Kirim code untuk download
 
 Contoh:
-<code>lisafilescode_1v_0p_0d_xxxxx</code>
+<code>files_1v_0p_0d_xxxxx</code>
 """,
         parse_mode=enums.ParseMode.HTML
     )
@@ -191,7 +196,7 @@ async def download(client, message):
 📥 Kirim code media
 
 Contoh:
-<code>lisafilescode_1v_0p_0d_xxxxx</code>
+<code>files_1v_0p_0d_xxxxx</code>
 """,
         parse_mode=enums.ParseMode.HTML
     )
@@ -201,13 +206,17 @@ Contoh:
 @app.on_message(filters.command("upload"))
 async def upload(client, message):
 
-    user_uploads[message.from_user.id] = []
+    user_id = message.from_user.id
 
-    await message.reply_text(
+    user_uploads[user_id] = []
+
+    msg = await message.reply_text(
         """
 📤 MODE UPLOAD AKTIF
 
 Sekarang kirim media/file/video
+
+📦 Total media: 0
 """,
         reply_markup=InlineKeyboardMarkup([
             [
@@ -218,6 +227,8 @@ Sekarang kirim media/file/video
             ]
         ])
     )
+
+    upload_status_message[user_id] = msg.id
 
 
 # ================= SAVE MEDIA =================
@@ -243,23 +254,35 @@ async def save_media(client, message):
 
         total = len(user_uploads[user_id])
 
-        await message.reply_text(
-            f"""
+        # UPDATE SATU PESAN SAJA
+        if user_id in upload_status_message:
+
+            try:
+
+                await client.edit_message_text(
+                    chat_id=message.chat.id,
+                    message_id=upload_status_message[user_id],
+                    text=f"""
+📤 MODE UPLOAD AKTIF
+
 ✅ Media berhasil disimpan
 
 📦 Total media: {total}
-""",
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton(
-                        "✅ Buat Code",
-                        callback_data="make_code"
-                    )
-                ]
-            ])
-        )
 
-        await asyncio.sleep(1)
+Klik DONE jika selesai upload
+""",
+                    reply_markup=InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton(
+                                "✅ Done",
+                                callback_data="make_code"
+                            )
+                        ]
+                    ])
+                )
+
+            except:
+                pass
 
         try:
             await message.delete()
@@ -334,11 +357,13 @@ Silahkan pilih menu dibawah
 
         user_uploads[user_id] = []
 
-        await callback_query.message.reply_text(
+        msg = await callback_query.message.reply_text(
             """
 📤 MODE UPLOAD AKTIF
 
 Sekarang kirim media/file/video
+
+📦 Total media: 0
 """,
             reply_markup=InlineKeyboardMarkup([
                 [
@@ -350,6 +375,8 @@ Sekarang kirim media/file/video
             ])
         )
 
+        upload_status_message[user_id] = msg.id
+
     # ================= MENU DOWNLOAD =================
     elif data == "menu_download":
 
@@ -358,7 +385,7 @@ Sekarang kirim media/file/video
 📥 Kirim code media
 
 Contoh:
-<code>lisafilescode_1v_0p_0d_xxxxx</code>
+<code>files_1v_0p_0d_xxxxx</code>
 """,
             parse_mode=enums.ParseMode.HTML
         )
@@ -397,7 +424,6 @@ Contoh:
                 "❌ Belum ada media"
             )
 
-        # ================= HITUNG MEDIA =================
         video_count = 0
         photo_count = 0
         doc_count = 0
@@ -427,7 +453,6 @@ Contoh:
             except:
                 pass
 
-        # ================= RANDOM STRING =================
         random_string = ''.join(
             random.choices(
                 string.ascii_lowercase + string.digits,
@@ -435,23 +460,25 @@ Contoh:
             )
         )
 
-        # ================= FINAL CODE =================
+        prefix = "files"
+
         code = (
-            f"lisafilescode_"
+            f"{prefix}_"
             f"{video_count}v_"
             f"{photo_count}p_"
             f"{doc_count}d_"
             f"{random_string}"
         )
 
-        # ================= SAVE DATABASE =================
         media_db[code] = media_ids
 
         with open(DB_FILE, "w") as f:
             json.dump(media_db, f)
 
-        # ================= DELETE SESSION =================
         del user_uploads[user_id]
+
+        if user_id in upload_status_message:
+            del upload_status_message[user_id]
 
         await callback_query.message.reply_text(
             f"""
@@ -511,43 +538,102 @@ async def send_page(client, message, media_ids, page, code):
 
     bot_username = (await client.get_me()).username
 
-    # ================= KIRIM MEDIA =================
+    media_group = []
+
     for index, msg_id in enumerate(current_ids):
 
         try:
 
-            await client.copy_message(
-                chat_id=message.chat.id,
-                from_chat_id=DB_CHANNEL,
-                message_id=msg_id
+            msg = await client.get_messages(
+                DB_CHANNEL,
+                msg_id
             )
 
-            # DELAY ANTI FLOOD
-            await asyncio.sleep(0.8)
+            caption_text = None
 
-            # INFO SETELAH MEDIA TERAKHIR
+            # CAPTION HANYA TERAKHIR
             if index == len(current_ids) - 1:
 
-                await message.reply_text(
-                    f"""
-<b>📂 Halaman {page+1}/{total_pages}</b>
-<b>📦 Total File:</b> {len(media_ids)}
+                caption_text = f"""
+📂 Halaman {page+1}/{total_pages}
+📦 Total File: {len(media_ids)}
 
-<a href="https://t.me/{bot_username}">
-🤖 Klik masuk bot
-</a>
-""",
-                    parse_mode=enums.ParseMode.HTML,
-                    disable_web_page_preview=True
+🤖 https://t.me/{bot_username}
+"""
+
+            # PHOTO
+            if msg.photo:
+
+                media_group.append(
+                    InputMediaPhoto(
+                        media=msg.photo.file_id,
+                        caption=caption_text
+                    )
                 )
 
-        except FloodWait as e:
+            # VIDEO
+            elif msg.video:
 
-            await asyncio.sleep(e.value)
+                media_group.append(
+                    InputMediaVideo(
+                        media=msg.video.file_id,
+                        caption=caption_text
+                    )
+                )
+
+            # DOCUMENT
+            elif msg.document:
+
+                media_group.append(
+                    InputMediaDocument(
+                        media=msg.document.file_id,
+                        caption=caption_text
+                    )
+                )
+
+            # AUDIO
+            elif msg.audio:
+
+                media_group.append(
+                    InputMediaAudio(
+                        media=msg.audio.file_id,
+                        caption=caption_text
+                    )
+                )
+
+            # ANIMATION
+            elif msg.animation:
+
+                media_group.append(
+                    InputMediaAnimation(
+                        media=msg.animation.file_id,
+                        caption=caption_text
+                    )
+                )
 
         except Exception as e:
 
             print(e)
+
+    # ================= SEND ALBUM =================
+    try:
+
+        if media_group:
+
+            await client.send_media_group(
+                chat_id=message.chat.id,
+                media=media_group
+            )
+
+    except FloodWait as e:
+
+        print(f"FloodWait {e.value}")
+
+        await asyncio.sleep(e.value + 2)
+
+    except Exception as e:
+
+        print(e)
 
     # ================= BUTTON =================
     buttons = []
@@ -566,13 +652,11 @@ async def send_page(client, message, media_ids, page, code):
         if len(row) == 5:
 
             buttons.append(row)
-
             row = []
 
     if row:
         buttons.append(row)
 
-    # ================= NAVIGATION =================
     nav = []
 
     if page > 0:
@@ -596,18 +680,13 @@ async def send_page(client, message, media_ids, page, code):
     if nav:
         buttons.append(nav)
 
-    # ================= PAGE INFO =================
     await message.reply_text(
         f"""
-📂 Halaman: {page+1}/{total_pages}
+✅ Sedang menampilkan halaman {page+1}/{total_pages}
 
-📦 Total File: {len(media_ids)}
-
-🔑 Code:
-<code>{code}</code>
+Klik tombol dibawah untuk melihat halaman berikutnya ↓
 """,
-        reply_markup=InlineKeyboardMarkup(buttons),
-        parse_mode=enums.ParseMode.HTML
+        reply_markup=InlineKeyboardMarkup(buttons)
     )
 
 
