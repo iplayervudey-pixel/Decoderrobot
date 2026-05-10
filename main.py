@@ -1,20 +1,41 @@
+from pyrogram import Client, filters
+import os
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+API_ID = int(os.getenv("API_ID"))
+API_HASH = os.getenv("API_HASH")
+
+FORCE_CHANNEL = os.getenv("FORCE_CHANNEL")
+
+app = Client(
+    "bot",
+    bot_token=BOT_TOKEN,
+    api_id=API_ID,
+    api_hash=API_HASH
+)
+
+
 @app.on_message(filters.command("start"))
 async def start(client, message):
+    await message.reply_text("Bot Online")
 
-    user_id = message.from_user.id
+
+@app.on_message(filters.command("id"))
+async def idtest(client, message):
 
     try:
-        member = await client.get_chat_member(
-            FORCE_CHANNEL,
-            user_id
-        )
 
-        if member.status in ["member", "administrator", "owner"]:
-            await message.reply_text("Welcome")
-        else:
-            await message.reply_text("Join channel dulu")
+        chat = await client.get_chat(FORCE_CHANNEL)
 
-    except:
         await message.reply_text(
-            "Silahkan join channel dulu"
+            f"CHANNEL ID:\n{chat.id}"
         )
+
+    except Exception as e:
+
+        await message.reply_text(
+            f"ERROR:\n{e}"
+        )
+
+
+app.run()
