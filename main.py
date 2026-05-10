@@ -1,5 +1,5 @@
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -36,13 +36,19 @@ async def start(client, message):
 
     if not joined:
         return await message.reply_text(
-            "⚠️ Join The Bot Channel First",
+            "⚠️ Kamu harus join channel terlebih dahulu",
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
                         InlineKeyboardButton(
-                            "JOIN CHANNEL✈️",
+                            "JOIN CHANNEL",
                             url=CHANNEL_LINK
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "✅ SUDAH JOIN",
+                            callback_data="check_join"
                         )
                     ]
                 ]
@@ -50,7 +56,24 @@ async def start(client, message):
         )
 
     await message.reply_text(
-        "✅ Done Joined"
+        "✅ Kamu sudah join channel"
     )
+
+
+@app.on_callback_query(filters.regex("check_join"))
+async def check_join_button(client, query: CallbackQuery):
+
+    joined = await check_join(query.from_user.id)
+
+    if not joined:
+        return await query.answer(
+            "❌ Kamu belum join channel",
+            show_alert=True
+        )
+
+    await query.message.edit_text(
+        "✅ Join channel berhasil"
+    )
+
 
 app.run()
