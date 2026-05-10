@@ -1,11 +1,5 @@
 from pyrogram import Client, filters
-from pyrogram.types import (
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-    BotCommand
-)
-from pyrogram.errors import UserNotParticipant
-
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 import os
 import random
 import string
@@ -14,9 +8,8 @@ import asyncio
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
-
 FORCE_CHANNEL = os.getenv("FORCE_CHANNEL")
-DB_CHANNEL = os.getenv("DB_CHANNEL")
+DB_CHANNEL = int(os.getenv("DB_CHANNEL"))
 
 app = Client(
     "memory_bot",
@@ -30,214 +23,118 @@ user_uploads = {}
 media_db = {}
 
 
-# =========================
-# CHECK JOIN
-# =========================
-
+# ================= CHECK JOIN =================
 async def check_join(client, user_id):
-
     try:
+        member = await client.get_chat_member(FORCE_CHANNEL, user_id)
+        status = str(member.status).lower()
 
-        member = await client.get_chat_member(
-            chat_id=FORCE_CHANNEL,
-            user_id=user_id
-        )
-
-        print(member)
-
-        status = str(member.status)
-
-        allowed = [
+        return any(x in status for x in [
             "member",
             "administrator",
             "owner",
-            "restricted",
-            "ChatMemberStatus.MEMBER",
-            "ChatMemberStatus.ADMINISTRATOR",
-            "ChatMemberStatus.OWNER",
-            "ChatMemberStatus.RESTRICTED"
-        ]
-
-        if status in allowed:
-            return True
-
-        return False
-
+            "restricted"
+        ])
     except Exception as e:
-
-        print(f"JOIN ERROR: {e}")
-
+        print("JOIN ERROR:", e)
         return False
 
 
-# =========================
-# SET COMMANDS
-# =========================
-
+# ================= COMMAND =================
 @app.on_message(filters.command("setcmd"))
 async def setcmd(client, message):
-
-    commands = [
-        BotCommand("start", "Mulai Bot"),
-        BotCommand("upload", "Upload Media"),
-        BotCommand("download", "Download Media"),
+    await client.set_bot_commands([
+        BotCommand("start", "Mulai bot"),
+        BotCommand("upload", "Upload media"),
+        BotCommand("download", "Download media"),
         BotCommand("help", "Bantuan"),
-        BotCommand("myid", "ID Saya")
-    ]
-
-    await client.set_bot_commands(commands)
-
-    await message.reply_text(
-        "✅ Command bot berhasil dipasang"
-    )
+        BotCommand("myid", "ID saya")
+    ])
+    await message.reply_text("✅ Command berhasil dipasang")
 
 
-# =========================
-# START
-# =========================
+# ================= MENU =================
+def main_menu():
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("📤 Upload", callback_data="menu_upload"),
+            InlineKeyboardButton("📥 Download", callback_data="menu_download")
+        ],
+        [
+            InlineKeyboardButton("🆘 Help", callback_data="menu_help"),
+            InlineKeyboardButton("🆔 My ID", callback_data="menu_myid")
+        ]
+    ])
 
+
+# ================= START =================
 @app.on_message(filters.command("start"))
 async def start(client, message):
-
     user_id = message.from_user.id
-
     joined = await check_join(client, user_id)
 
     if not joined:
-
-        buttons = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        "📢 Join Channel",
-                        url=f"https://t.me/{FORCE_CHANNEL.replace('@', '')}"
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        "✅ Sudah Join",
-                        callback_data="cek_join"
-                    )
-                ]
-            ]
-        )
-
         return await message.reply_text(
-            "⚠️ Silahkan join channel bot terlebih dahulu untuk menggunakan semua fitur bot.",
-            reply_markup=buttons
+            "⚠️ Join channel dulu.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    "📢 Join Channel",
+                    url=f"https://t.me/{FORCE_CHANNEL.replace('@','')}"
+                )],
+                [InlineKeyboardButton(
+                    "✅ Sudah Join",
+                    callback_data="cek_join"
+                )]
+            ])
         )
-
-    buttons = InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton(
-                    "📤 Upload",
-                    callback_data="menu_upload"
-                ),
-                InlineKeyboardButton(
-                    "📥 Download",
-                    callback_data="menu_download"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "🆘 Help",
-                    callback_data="menu_help"
-                ),
-                InlineKeyboardButton(
-                    "🆔 My ID",
-                    callback_data="menu_myid"
-                )
-            ]
-        ]
-    )
 
     await message.reply_text(
-        "✅ Verifikasi berhasil.\n\nSilahkan gunakan bot dengan baik dan gunakan tombol di bawah untuk semua fitur bot.",
-        reply_markup=buttons
+        "✅ Verifikasi berhasil",
+        reply_markup=main_menu()
     )
 
 
-# =========================
-# HELP
-# =========================
-
+# ================= HELP =================
 @app.on_message(filters.command("help"))
 async def help_cmd(client, message):
+    await message.reply_text(
+        "Gunakan /upload untuk upload media lalu buat code."
+    )
 
-    text = """
-📖 Bantuan Penggunaan Bot
-
-1. Join channel bot terlebih dahulu.
-2. Gunakan /upload untuk upload media.
-3. Kirim banyak media sekaligus.
-4. Tekan tombol ✅ Buat Code jika selesai upload.
-5. Bot otomatis membuat code media.
-6. Share code ke teman kalian.
-7. Tempel code untuk download media.
-8. Semua media tersimpan otomatis.
-
-⚠️ Peraturan Bot:
-- Jangan spam bot
-- Jangan upload file berbahaya
-- Jangan menyalahgunakan bot
-- Gunakan dengan bijak
-- Share bot ke teman kalian
-
-Terima kasih telah menggunakan bot.
-"""
-
-    await message.reply_text(text)
-
-
-# =========================
-# MY ID
-# =========================
 
 @app.on_message(filters.command("myid"))
 async def myid(client, message):
-
     await message.reply_text(
         f"🆔 ID Kamu:\n`{message.from_user.id}`"
     )
 
 
-# =========================
-# UPLOAD
-# =========================
+@app.on_message(filters.command("download"))
+async def download(client, message):
+    await message.reply_text("📥 Kirim code media")
 
+
+# ================= UPLOAD =================
 @app.on_message(filters.command("upload"))
 async def upload(client, message):
-
     user_uploads[message.from_user.id] = []
 
-    buttons = InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton(
-                    "➕ Tambah Media",
-                    callback_data="add_media"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "✅ Buat Code",
-                    callback_data="make_code"
-                )
-            ]
-        ]
-    )
-
     await message.reply_text(
-        "📤 Silahkan kirim media sekarang.\n\nJika sudah selesai upload tekan tombol ✅ Buat Code.",
-        reply_markup=buttons
+        "📤 Silahkan kirim media sekarang",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                "➕ Tambah Media",
+                callback_data="add_media"
+            )],
+            [InlineKeyboardButton(
+                "✅ Buat Code",
+                callback_data="make_code"
+            )]
+        ])
     )
 
 
-# =========================
-# SAVE MEDIA
-# =========================
-
+# ================= SAVE MEDIA =================
 @app.on_message(
     filters.photo |
     filters.video |
@@ -246,212 +143,115 @@ async def upload(client, message):
     filters.animation
 )
 async def save_media(client, message):
-
     user_id = message.from_user.id
 
     if user_id not in user_uploads:
-        user_uploads[user_id] = []
+        return
 
     try:
-
-        # ANTI FLOOD
         await asyncio.sleep(1)
 
-        copied = await message.copy(
-            chat_id=DB_CHANNEL
-        )
-
+        copied = await message.copy(DB_CHANNEL)
         user_uploads[user_id].append(copied.id)
 
         total = len(user_uploads[user_id])
 
-        buttons = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        "➕ Tambah Media",
-                        callback_data="add_media"
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        "✅ Buat Code",
-                        callback_data="make_code"
-                    )
-                ]
-            ]
-        )
+        buttons = InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                "➕ Tambah Media",
+                callback_data="add_media"
+            )],
+            [InlineKeyboardButton(
+                "✅ Buat Code",
+                callback_data="make_code"
+            )]
+        ])
 
-        await message.reply_text(
+        bot_msg = await message.reply_text(
             f"✅ Media berhasil disimpan\n\n📦 Total media: {total}",
             reply_markup=buttons
         )
 
+        await asyncio.sleep(5)
+
+        try:
+            await bot_msg.delete()
+            await message.delete()
+        except:
+            pass
+
     except Exception as e:
+        await message.reply_text(f"❌ Error:\n{e}")
 
-        await message.reply_text(
-            f"❌ Gagal menyimpan media\n\n{e}"
-)
 
-# =========================
-# CALLBACK BUTTONS
-# =========================
-
+# ================= CALLBACK =================
 @app.on_callback_query()
 async def callbacks(client, callback_query):
+    await callback_query.answer()
 
+    data = callback_query.data
     user_id = callback_query.from_user.id
 
-    if callback_query.data == "cek_join":
+    # PAGE
+    if data.startswith("page_"):
+        _, code, page = data.split("_")
+        page = int(page)
 
-        joined = await check_join(client, user_id)
-
-        if jo@app.on_message(
-    filters.photo |
-    filters.video |
-    filters.document |
-    filters.audio |
-    filters.animation
-)
-async def save_media(client, message):
-
-    user_id = message.from_user.id
-
-    if user_id not in user_uploads:
-        user_uploads[user_id] = []
-
-    try:
-
-        # ANTI FLOOD
-        await asyncio.sleep(1)
-
-        copied = await message.copy(
-            chat_id=DB_CHANNEL
-        )
-
-        user_uploads[user_id].append(copied.id)
-
-        total = len(user_uploads[user_id])
-
-        buttons = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        "➕ Tambah Media",
-                        callback_data="add_media"
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        "✅ Buat Code",
-                        callback_data="make_code"
-                    )
-                ]
-            ]
-        )
-
-        await message.reply_text(
-            f"✅ Media berhasil disimpan\n\n📦 Total media: {total}",
-            reply_markup=buttons
-        )
-
-    except Exception as e:
-
-        await message.reply_text(
-            f"❌ Gagal menyimpan media\n\n{e}"
-    )ined:
-
-            buttons = InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton(
-                            "📤 Upload",
-                            callback_data="menu_upload"
-                        ),
-                        InlineKeyboardButton(
-                            "📥 Download",
-                            callback_data="menu_download"
-                        )
-                    ],
-                    [
-                        InlineKeyboardButton(
-                            "🆘 Help",
-                            callback_data="menu_help"
-                        ),
-                        InlineKeyboardButton(
-                            "🆔 My ID",
-                            callback_data="menu_myid"
-                        )
-                    ]
-                ]
+        if code not in media_db:
+            return await callback_query.message.reply_text(
+                "❌ Data tidak ditemukan"
             )
 
+        return await send_page(
+            client,
+            callback_query.message,
+            media_db[code],
+            page,
+            code
+        )
+
+    if data == "cek_join":
+        joined = await check_join(client, user_id)
+
+        if joined:
             return await callback_query.message.edit_text(
-                "✅ Verifikasi berhasil.\n\nSilahkan gunakan bot dengan baik.",
-                reply_markup=buttons
+                "✅ Verifikasi berhasil",
+                reply_markup=main_menu()
             )
 
         return await callback_query.answer(
-            "❌ Kamu belum join channel",
+            "❌ Kamu belum join",
             show_alert=True
         )
 
-    elif callback_query.data == "menu_upload":
-
+    elif data == "menu_upload":
         user_uploads[user_id] = []
-
-        buttons = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        "➕ Tambah Media",
-                        callback_data="add_media"
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        "✅ Buat Code",
-                        callback_data="make_code"
-                    )
-                ]
-            ]
-        )
-
         await callback_query.message.reply_text(
-            "📤 Silahkan kirim media sekarang.",
-            reply_markup=buttons
+            "📤 Silahkan kirim media"
         )
 
-    elif callback_query.data == "menu_download":
-
+    elif data == "menu_download":
         await callback_query.message.reply_text(
-            "📥 Silahkan kirim code media terlebih dahulu."
+            "📥 Kirim code media"
         )
 
-    elif callback_query.data == "menu_help":
-
+    elif data == "menu_help":
         await callback_query.message.reply_text(
-            "📖 Gunakan /upload untuk membuat code dan kirim code untuk download media."
+            "Gunakan /upload lalu buat code"
         )
 
-    elif callback_query.data == "menu_myid":
-
+    elif data == "menu_myid":
         await callback_query.message.reply_text(
-            f"🆔 ID Kamu:\n`{user_id}`"
+            f"`{user_id}`"
         )
 
-    elif callback_query.data == "add_media":
+    elif data == "add_media":
+        await callback_query.answer("📤 Kirim media lagi")
 
-        await callback_query.answer(
-            "📤 Silahkan kirim media lagi"
-        )
-
-    elif callback_query.data == "make_code":
-
+    elif data == "make_code":
         media_ids = user_uploads.get(user_id, [])
 
         if not media_ids:
-
             return await callback_query.message.reply_text(
                 "❌ Belum ada media"
             )
@@ -463,168 +263,86 @@ async def save_media(client, message):
             )
         )
 
-        videos = 0
-        photos = 0
-        docs = 0
+        videos = photos = docs = 0
 
         for msg_id in media_ids:
-
-            msg = await client.get_messages(
-                DB_CHANNEL,
-                msg_id
-            )
+            msg = await client.get_messages(DB_CHANNEL, msg_id)
 
             if msg.video:
                 videos += 1
-
             elif msg.photo:
                 photos += 1
-
             elif msg.document:
                 docs += 1
 
         suffix = []
-
         if videos:
             suffix.append(f"{videos}V")
-
         if photos:
             suffix.append(f"{photos}P")
-
         if docs:
             suffix.append(f"{docs}B")
 
         suffix_text = "_".join(suffix)
-
         bot_username = (await client.get_me()).username
-
         final_code = f"{bot_username}:{code_random}_{suffix_text}"
 
         media_db[final_code] = media_ids
-
         del user_uploads[user_id]
 
         await callback_query.message.reply_text(
-            f"✅ Code berhasil dibuat\n\n🔑 Code:\n`{final_code}`\n\n📦 Total File: {len(media_ids)}"
+            f"✅ Code berhasil dibuat\n\n`{final_code}`"
         )
 
 
-# =========================
-# DOWNLOAD
-# =========================
-
-@app.on_message(filters.command("download"))
-async def download(client, message):
-
-    await message.reply_text(
-        "📥 Silahkan kirim code media sekarang."
-    )
-
-
-# =========================
-# CODE DETECT
-# =========================
-
+# ================= CODE DETECT =================
 @app.on_message(filters.text)
 async def get_code(client, message):
+    code = message.text.strip()
 
-    text = message.text.strip()
-
-    if text not in media_db:
+    if code not in media_db:
         return
 
-    media_ids = media_db[text]
-
-    total_media = len(media_ids)
-    total_pages = (total_media + 9) // 10
-
-    await message.reply_text(
-        f"✅ Code ditemukan\n\n📦 Total file: {total_media}\n📄 Total halaman: {total_pages}\n\n⬇️ Sedang menampilkan halaman pertama"
-    )
-
-    await send_page(
-        client,
-        message,
-        media_ids,
-        0,
-        text
-    )
+    media_ids = media_db[code]
+    await send_page(client, message, media_ids, 0, code)
 
 
-# =========================
-# SEND PAGE
-# =========================
-
+# ================= SEND PAGE =================
 async def send_page(client, message, media_ids, page, code):
+    per_page = 10
+    start = page * per_page
+    end = start + per_page
+    total_pages = (len(media_ids) + per_page - 1) // per_page
 
-    start = page * 10
-    end = start + 10
-
-    current_media = media_ids[start:end]
-
-    total_pages = (len(media_ids) + 9) // 10
-
-    # =========================
-    # SEND 10 MEDIA
-    # =========================
-
-    for index, msg_id in enumerate(current_media, start=1):
-
-        caption = (
-            f"📦 File {start + index}\n"
-            f"🤖 Powered By @{(await client.get_me()).username}\n"
-            f"🔗 Share Bot Ke Teman Kamu"
-        )
-
+    for index, msg_id in enumerate(media_ids[start:end], start=1):
         await client.copy_message(
-            chat_id=message.chat.id,
-            from_chat_id=DB_CHANNEL,
-            message_id=msg_id,
-            caption=caption
+            message.chat.id,
+            DB_CHANNEL,
+            msg_id,
+            caption=f"📦 File {start+index}"
         )
-
-    # =========================
-    # BUTTON PAGE STYLE CHINA
-    # =========================
 
     buttons = []
-
     row = []
 
     for i in range(total_pages):
-
-        if i == page:
-
-            text = f"✅ {i+1}"
-
-        else:
-
-            text = f"☑️ {i+1}"
-
         row.append(
             InlineKeyboardButton(
-                text,
+                f"{'✅' if i == page else '☑️'} {i+1}",
                 callback_data=f"page_{code}_{i}"
             )
         )
 
-        # 5 tombol per baris
         if len(row) == 5:
-
             buttons.append(row)
             row = []
 
     if row:
         buttons.append(row)
 
-    # =========================
-    # PREV NEXT
-    # =========================
-
     nav = []
 
     if page > 0:
-
         nav.append(
             InlineKeyboardButton(
                 f"⬅️ Prev {page}",
@@ -633,7 +351,6 @@ async def send_page(client, message, media_ids, page, code):
         )
 
     if page < total_pages - 1:
-
         nav.append(
             InlineKeyboardButton(
                 f"Next {page+2} ➡️",
@@ -644,62 +361,14 @@ async def send_page(client, message, media_ids, page, code):
     if nav:
         buttons.append(nav)
 
-    # =========================
-    # MENU BUTTON
-    # =========================
-
-    buttons.append(
-        [
-            InlineKeyboardButton(
-                "📤 Upload Lagi",
-                callback_data="menu_upload"
-            ),
-            InlineKeyboardButton(
-                "🆘 Menu",
-                callback_data="menu_help"
-            )
-        ]
-    )
-
-    # =========================
-    # SEND INFO
-    # =========================
+    buttons.append([
+        InlineKeyboardButton("📤 Upload Lagi", callback_data="menu_upload"),
+        InlineKeyboardButton("🆘 Menu", callback_data="menu_help")
+    ])
 
     await message.reply_text(
-        f"📦 Total File: {len(media_ids)}\n"
-        f"📄 Halaman: {page+1}/{total_pages}\n\n"
-        f"⬇️ Klik tombol angka di bawah untuk membuka halaman file.",
+        f"📄 Halaman {page+1}/{total_pages}",
         reply_markup=InlineKeyboardMarkup(buttons)
-)
-
-
-# =========================
-# PAGE CALLBACK
-# =========================
-
-@app.on_callback_query(filters.regex(r"^page_"))
-async def page_callback(client, callback_query):
-
-    data = callback_query.data.split("_")
-
-    code = data[1]
-    page = int(data[2])
-
-    if code not in media_db:
-        return
-
-    media_ids = media_db[code]
-
-    await callback_query.message.reply_text(
-        f"📄 Membuka halaman {page+1}"
-    )
-
-    await send_page(
-        client,
-        callback_query.message,
-        media_ids,
-        page,
-        code
     )
 
 
