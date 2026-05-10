@@ -36,12 +36,12 @@ async def start(client, message):
 
     if not joined:
         return await message.reply_text(
-            "⚠️ Kamu harus join channel terlebih dahulu",
+            "⚠️ Join The Bot Channel First",
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
                         InlineKeyboardButton(
-                            "JOIN CHANNEL",
+                            "JOIN CHANNEL✈️",
                             url=CHANNEL_LINK
                         )
                     ]
@@ -50,7 +50,7 @@ async def start(client, message):
         )
 
     await message.reply_text(
-        "✅ Kamu sudah join channel"
+        "✅ Done Joined"
     )
 
 app.run()
