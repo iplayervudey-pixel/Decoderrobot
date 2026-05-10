@@ -21,7 +21,7 @@ DB_CHANNEL = int(os.getenv("DB_CHANNEL"))
 
 DB_FILE = "media_db.json"
 
-# ================= LOAD DATABASE =================
+# ================= LOAD DB =================
 try:
     with open(DB_FILE, "r") as f:
         media_db = json.load(f)
@@ -159,7 +159,7 @@ async def help_cmd(client, message):
 4. Copy code
 5. Kirim code untuk download
 
-Contoh code:
+Contoh:
 <code>lisafilescode_1v_0p_0d_xxxxx</code>
 """,
         parse_mode=enums.ParseMode.HTML
@@ -507,7 +507,6 @@ async def send_page(client, message, media_ids, page, code):
         len(media_ids) + per_page - 1
     ) // per_page
 
-    # ================= BOT USERNAME =================
     bot_username = (await client.get_me()).username
 
     # ================= KIRIM MEDIA =================
@@ -515,14 +514,17 @@ async def send_page(client, message, media_ids, page, code):
 
         try:
 
-            # MEDIA TERAKHIR ADA CAPTION
+            await client.copy_message(
+                chat_id=message.chat.id,
+                from_chat_id=DB_CHANNEL,
+                message_id=msg_id
+            )
+
+            # MEDIA TERAKHIR KIRIM INFO
             if index == len(current_ids) - 1:
 
-                await client.copy_message(
-                    chat_id=message.chat.id,
-                    from_chat_id=DB_CHANNEL,
-                    message_id=msg_id,
-                    caption=f"""
+                await message.reply_text(
+                    f"""
 <b>📂 Halaman {page+1}/{total_pages}</b>
 <b>📦 Total File:</b> {len(media_ids)}
 
@@ -530,15 +532,8 @@ async def send_page(client, message, media_ids, page, code):
 🤖 Klik masuk bot
 </a>
 """,
-                    parse_mode=enums.ParseMode.HTML
-                )
-
-            else:
-
-                await client.copy_message(
-                    chat_id=message.chat.id,
-                    from_chat_id=DB_CHANNEL,
-                    message_id=msg_id
+                    parse_mode=enums.ParseMode.HTML,
+                    disable_web_page_preview=True
                 )
 
             # ANTI FLOOD
