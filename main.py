@@ -16,12 +16,14 @@ import json
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
+
+# SUPPORT USERNAME / ID
 FORCE_CHANNEL = os.getenv("FORCE_CHANNEL")
-DB_CHANNEL = int(os.getenv("DB_CHANNEL"))
+DB_CHANNEL = os.getenv("DB_CHANNEL")
 
 DB_FILE = "media_db.json"
 
-# ================= LOAD DB =================
+# ================= LOAD DATABASE =================
 try:
     with open(DB_FILE, "r") as f:
         media_db = json.load(f)
@@ -442,7 +444,7 @@ Contoh:
             f"{random_string}"
         )
 
-        # ================= SAVE =================
+        # ================= SAVE DATABASE =================
         media_db[code] = media_ids
 
         with open(DB_FILE, "w") as f:
@@ -464,7 +466,7 @@ Contoh:
         )
 
 
-# ================= CODE DETECT =================
+# ================= DETECT CODE =================
 @app.on_message(filters.text)
 async def get_code(client, message):
 
@@ -520,7 +522,10 @@ async def send_page(client, message, media_ids, page, code):
                 message_id=msg_id
             )
 
-            # MEDIA TERAKHIR KIRIM INFO
+            # DELAY ANTI FLOOD
+            await asyncio.sleep(0.8)
+
+            # INFO SETELAH MEDIA TERAKHIR
             if index == len(current_ids) - 1:
 
                 await message.reply_text(
@@ -535,9 +540,6 @@ async def send_page(client, message, media_ids, page, code):
                     parse_mode=enums.ParseMode.HTML,
                     disable_web_page_preview=True
                 )
-
-            # ANTI FLOOD
-            await asyncio.sleep(0.8)
 
         except FloodWait as e:
 
@@ -570,6 +572,7 @@ async def send_page(client, message, media_ids, page, code):
     if row:
         buttons.append(row)
 
+    # ================= NAVIGATION =================
     nav = []
 
     if page > 0:
