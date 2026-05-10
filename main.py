@@ -29,5 +29,9 @@ async def start(client, message):
         await message.reply_text(
             f"ERROR:\\n{e}"
         )
+        @app.on_message(filters.command("id"))
+async def idtest(client, message):
+    chat = await client.get_chat(FORCE_CHANNEL)
+    await message.reply_text(str(chat.id))
 
 app.run()
