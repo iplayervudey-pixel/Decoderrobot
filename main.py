@@ -22,8 +22,8 @@ app = Client(
 
 
 async def is_joined(user_id):
-
     try:
+
         member = await app.get_chat_member(
             FORCE_CHANNEL,
             user_id
@@ -48,45 +48,44 @@ async def is_joined(user_id):
 @app.on_message(filters.command("start"))
 async def start_command(client, message):
 
-    user_id = message.from_user.id
+    joined = await is_joined(
+        message.from_user.id
+    )
 
-    joined = await is_joined(user_id)
-
-    if not joined:
-
-        buttons = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        "JOIN CHANNEL",
-                        url=CHANNEL_LINK
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        "✅ SUDAH JOIN",
-                        callback_data="check_join"
-                    )
-                ]
-            ]
-        )
-
+    if joined:
         return await message.reply_text(
-            "⚠️ Kamu harus join channel terlebih dahulu",
-            reply_markup=buttons
+            "✅ Kamu sudah join channel"
         )
+
+    buttons = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    "JOIN CHANNEL",
+                    url=CHANNEL_LINK
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "✅ SUDAH JOIN",
+                    callback_data="check_join"
+                )
+            ]
+        ]
+    )
 
     await message.reply_text(
-        "✅ Kamu sudah join channel"
+        "⚠️ Kamu harus join channel terlebih dahulu",
+        reply_markup=buttons
     )
 
 
 @app.on_callback_query(filters.regex("check_join"))
 async def check_join_callback(client, query: CallbackQuery):
 
-    user_id = query.from_user.id
-
-    joined = await is_joined(user_id)
+    joined = await is_joined(
+        query.from_user.id
+    )
 
     if not joined:
         return await query.answer(
@@ -96,6 +95,10 @@ async def check_join_callback(client, query: CallbackQuery):
 
     await query.message.edit_text(
         "✅ Join channel berhasil"
+    )
+
+    await query.answer(
+        "Berhasil join channel"
     )
 
 
