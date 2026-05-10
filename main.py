@@ -242,19 +242,47 @@ async def save_media(client, message):
 
     user_id = message.from_user.id
 
+    # AUTO SESSION
     if user_id not in user_uploads:
-        return
+        user_uploads[user_id] = []
 
-    copied = await message.copy(DB_CHANNEL)
+    try:
 
-    user_uploads[user_id].append(copied.id)
+        copied = await message.copy(
+            chat_id=DB_CHANNEL
+        )
 
-    total = len(user_uploads[user_id])
+        user_uploads[user_id].append(copied.id)
 
-    await message.reply_text(
-        f"✅ Media berhasil ditambahkan\n\n📦 Total media sekarang: {total}"
-    )
+        total = len(user_uploads[user_id])
 
+        buttons = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "➕ Tambah Media",
+                        callback_data="add_media"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "✅ Buat Code",
+                        callback_data="make_code"
+                    )
+                ]
+            ]
+        )
+
+        await message.reply_text(
+            f"✅ Media berhasil ditambahkan\n\n📦 Total media sekarang: {total}",
+            reply_markup=buttons
+        )
+
+    except Exception as e:
+
+        await message.reply_text(
+            f"❌ Gagal menyimpan media\n\n{e}"
+        )
 
 # =========================
 # CALLBACK BUTTONS
