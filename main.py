@@ -1,27 +1,40 @@
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
+from pyrogram.types import (
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    BotCommand
+)
 import os
 import random
 import string
 import asyncio
+import json
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
 FORCE_CHANNEL = os.getenv("FORCE_CHANNEL")
-DB_CHANNEL = os.getenv("DB_CHANNEL")   # pakai username channel
+DB_CHANNEL = os.getenv("DB_CHANNEL")
+
+DB_FILE = "media_db.json"
+
+try:
+    with open(DB_FILE, "r") as f:
+        media_db = json.load(f)
+except:
+    media_db = {}
 
 app = Client(
     "memory_bot",
     bot_token=BOT_TOKEN,
     api_id=API_ID,
     api_hash=API_HASH,
+    parse_mode="html",
     in_memory=True
 )
 
 upload_messages = {}
 user_uploads = {}
-media_db = {}
 
 
 # ================= CHECK JOIN =================
@@ -36,13 +49,12 @@ async def check_join(client, user_id):
             "owner",
             "restricted"
         ])
-    except Exception as e:
-        print("JOIN ERROR:", e)
+    except:
         return False
 
 
 # ================= MENU =================
-def main_menu():
+def menu():
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("📤 Upload", callback_data="menu_upload"),
@@ -62,8 +74,8 @@ async def setcmd(client, message):
         BotCommand("start", "Mulai bot"),
         BotCommand("upload", "Upload media"),
         BotCommand("download", "Download media"),
-        BotCommand("help", "Bantuan"),
-        BotCommand("myid", "ID saya")
+        BotCommand("help", "Help"),
+        BotCommand("myid", "My ID")
     ])
     await message.reply_text("✅ Command berhasil dipasang")
 
@@ -71,11 +83,13 @@ async def setcmd(client, message):
 # ================= START =================
 @app.on_message(filters.command("start"))
 async def start(client, message):
-    joined = await check_join(client, message.from_user.id)
+    user_id = message.from_user.id
+
+    joined = await check_join(client, user_id)
 
     if not joined:
         return await message.reply_text(
-            "⚠️ Silahkan join channel terlebih dahulu",
+            "⚠️ Join channel dulu",
             reply_markup=InlineKeyboardMarkup([
                 [
                     InlineKeyboardButton(
@@ -94,11 +108,11 @@ async def start(client, message):
 
     await message.reply_text(
         "✅ Verifikasi berhasil",
-        reply_markup=main_menu()
+        reply_markup=menu()
     )
 
 
-# ================= HELP =================
+# ================= BASIC COMMAND =================
 @app.on_message(filters.command("help"))
 async def help_cmd(client, message):
     await message.reply_text(
@@ -108,9 +122,7 @@ async def help_cmd(client, message):
 
 @app.on_message(filters.command("myid"))
 async def myid(client, message):
-    await message.reply_text(
-        f"🆔 ID Kamu:\n`{message.from_user.id}`"
-    )
+    await message.reply_text(f"`{message.from_user.id}`")
 
 
 @app.on_message(filters.command("download"))
@@ -179,12 +191,10 @@ async def save_media(client, message):
             ]
         ])
 
-        text = f"✅ Media berhasil disimpan\n\n📦 Total media: {total}"
-
         if user_id in upload_messages:
             try:
                 await upload_messages[user_id].edit_text(
-                    text,
+                    f"✅ Media berhasil disimpan\n\n📦 Total media: {total}",
                     reply_markup=buttons
                 )
             except:
@@ -198,7 +208,7 @@ async def save_media(client, message):
             pass
 
     except Exception as e:
-        await message.reply_text(f"❌ Error:\n{e}")
+        await message.reply_text(f"❌ {e}")
 
 
 # ================= CALLBACK =================
@@ -210,13 +220,13 @@ async def callbacks(client, callback_query):
     user_id = callback_query.from_user.id
 
     # PAGE
-    if data.startswith("page_"):
-        _, code, page = data.split("_")
+    if data.startswith("page|"):
+        _, code, page = data.split("|")
         page = int(page)
 
         if code not in media_db:
             return await callback_query.message.reply_text(
-                "❌ Data tidak ditemukan"
+                "❌ Code expired"
             )
 
         return await send_page(
@@ -227,18 +237,18 @@ async def callbacks(client, callback_query):
             code
         )
 
-    # JOIN CHECK
+    # JOIN
     if data == "cek_join":
         joined = await check_join(client, user_id)
 
         if joined:
             return await callback_query.message.edit_text(
                 "✅ Verifikasi berhasil",
-                reply_markup=main_menu()
+                reply_markup=menu()
             )
 
         return await callback_query.answer(
-            "❌ Kamu belum join",
+            "❌ Belum join",
             show_alert=True
         )
 
@@ -266,7 +276,9 @@ async def callbacks(client, callback_query):
         upload_messages[user_id] = msg
 
     elif data == "menu_download":
-        await callback_query.message.reply_text("📥 Kirim code media")
+        await callback_query.message.reply_text(
+            "📥 Kirim code media"
+        )
 
     elif data == "menu_help":
         await callback_query.message.reply_text(
@@ -296,42 +308,25 @@ async def callbacks(client, callback_query):
             )
         )
 
-        videos = photos = docs = 0
-
-        for msg_id in media_ids:
-            msg = await client.get_messages(DB_CHANNEL, msg_id)
-
-            if msg.video:
-                videos += 1
-            elif msg.photo:
-                photos += 1
-            elif msg.document:
-                docs += 1
-
-        suffix = []
-        if videos:
-            suffix.append(f"{videos}V")
-        if photos:
-            suffix.append(f"{photos}P")
-        if docs:
-            suffix.append(f"{docs}B")
-
-        suffix_text = "_".join(suffix)
         bot_username = (await client.get_me()).username
-        final_code = f"{bot_username}:{code_random}_{suffix_text}"
+        final_code = f"{bot_username}:{code_random}"
 
         media_db[final_code] = media_ids
+
+        with open(DB_FILE, "w") as f:
+            json.dump(media_db, f)
+
         del user_uploads[user_id]
 
         if user_id in upload_messages:
             del upload_messages[user_id]
 
         await callback_query.message.reply_text(
-            f"✅ Code berhasil dibuat\n\n🔑 Code:\n`{final_code}`"
+            f"✅ Code berhasil dibuat\n\n<code>{final_code}</code>"
         )
 
 
-# ================= GET CODE =================
+# ================= CODE DETECT =================
 @app.on_message(filters.text)
 async def get_code(client, message):
     code = message.text.strip()
@@ -353,15 +348,16 @@ async def send_page(client, message, media_ids, page, code):
     per_page = 10
     start = page * per_page
     end = start + per_page
+    current_ids = media_ids[start:end]
+
     total_pages = (len(media_ids) + per_page - 1) // per_page
 
-    for index, msg_id in enumerate(media_ids[start:end], start=1):
-        await client.copy_message(
-            message.chat.id,
-            DB_CHANNEL,
-            msg_id,
-            caption=f"📦 File {start+index}"
-        )
+    # kirim 10 media sekaligus
+    await client.copy_media_group(
+        chat_id=message.chat.id,
+        from_chat_id=DB_CHANNEL,
+        message_ids=current_ids
+    )
 
     buttons = []
     row = []
@@ -369,8 +365,8 @@ async def send_page(client, message, media_ids, page, code):
     for i in range(total_pages):
         row.append(
             InlineKeyboardButton(
-                f"{'✅' if i == page else '☑️'} {i+1}",
-                callback_data=f"page_{code}_{i}"
+                f"{'✅' if i == page else '✖️'} {i+1}",
+                callback_data=f"page|{code}|{i}"
             )
         )
 
@@ -386,16 +382,16 @@ async def send_page(client, message, media_ids, page, code):
     if page > 0:
         nav.append(
             InlineKeyboardButton(
-                f"⬅️ Prev {page}",
-                callback_data=f"page_{code}_{page-1}"
+                f"⬅️ Prev",
+                callback_data=f"page|{code}|{page-1}"
             )
         )
 
     if page < total_pages - 1:
         nav.append(
             InlineKeyboardButton(
-                f"Next {page+2} ➡️",
-                callback_data=f"page_{code}_{page+1}"
+                "Next ➡️",
+                callback_data=f"page|{code}|{page+1}"
             )
         )
 
@@ -403,12 +399,21 @@ async def send_page(client, message, media_ids, page, code):
         buttons.append(nav)
 
     buttons.append([
-        InlineKeyboardButton("📤 Upload Lagi", callback_data="menu_upload"),
-        InlineKeyboardButton("🆘 Menu", callback_data="menu_help")
+        InlineKeyboardButton(
+            "📤 Upload Lagi",
+            callback_data="menu_upload"
+        ),
+        InlineKeyboardButton(
+            "🆘 Menu",
+            callback_data="menu_help"
+        )
     ])
 
+    bot_username = (await client.get_me()).username
+
     await message.reply_text(
-        f"📄 Halaman {page+1}/{total_pages}",
+        f"第{page+1}/{total_pages}页 文件总数:{len(media_ids)}\n"
+        f'<a href="https://t.me/{bot_username}">点击进入机器人</a>',
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
