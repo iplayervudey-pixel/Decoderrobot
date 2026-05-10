@@ -1,5 +1,9 @@
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import (
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    CallbackQuery
+)
 import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -10,49 +14,66 @@ FORCE_CHANNEL = int(os.getenv("FORCE_CHANNEL"))
 CHANNEL_LINK = os.getenv("CHANNEL_LINK")
 
 app = Client(
-    "bot",
+    "forcejoinbot",
     bot_token=BOT_TOKEN,
     api_id=API_ID,
     api_hash=API_HASH
 )
 
-async def check_join(user_id):
-    try:
-        member = await app.get_chat_member(FORCE_CHANNEL, user_id)
 
-        if member.status in ["member", "administrator", "creator"]:
+async def is_joined(user_id):
+
+    try:
+        member = await app.get_chat_member(
+            FORCE_CHANNEL,
+            user_id
+        )
+
+        print(member.status)
+
+        if member.status in [
+            "member",
+            "administrator",
+            "creator"
+        ]:
             return True
 
         return False
 
-    except:
+    except Exception as e:
+        print(e)
         return False
 
 
 @app.on_message(filters.command("start"))
-async def start(client, message):
+async def start_command(client, message):
 
-    joined = await check_join(message.from_user.id)
+    user_id = message.from_user.id
+
+    joined = await is_joined(user_id)
 
     if not joined:
+
+        buttons = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "JOIN CHANNEL",
+                        url=CHANNEL_LINK
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "✅ SUDAH JOIN",
+                        callback_data="check_join"
+                    )
+                ]
+            ]
+        )
+
         return await message.reply_text(
             "⚠️ Kamu harus join channel terlebih dahulu",
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton(
-                            "JOIN CHANNEL",
-                            url=CHANNEL_LINK
-                        )
-                    ],
-                    [
-                        InlineKeyboardButton(
-                            "✅ SUDAH JOIN",
-                            callback_data="check_join"
-                        )
-                    ]
-                ]
-            )
+            reply_markup=buttons
         )
 
     await message.reply_text(
@@ -61,9 +82,11 @@ async def start(client, message):
 
 
 @app.on_callback_query(filters.regex("check_join"))
-async def check_join_button(client, query: CallbackQuery):
+async def check_join_callback(client, query: CallbackQuery):
 
-    joined = await check_join(query.from_user.id)
+    user_id = query.from_user.id
+
+    joined = await is_joined(user_id)
 
     if not joined:
         return await query.answer(
@@ -75,5 +98,7 @@ async def check_join_button(client, query: CallbackQuery):
         "✅ Join channel berhasil"
     )
 
+
+print("BOT ONLINE")
 
 app.run()
