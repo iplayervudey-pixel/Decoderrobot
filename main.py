@@ -38,25 +38,35 @@ async def check_join(client, user_id):
     try:
 
         member = await client.get_chat_member(
-            FORCE_CHANNEL,
-            user_id
+            chat_id=FORCE_CHANNEL,
+            user_id=user_id
         )
 
-        if member.status in [
+        print(member)
+
+        status = str(member.status)
+
+        allowed = [
             "member",
             "administrator",
             "owner",
-            "restricted"
-        ]:
+            "restricted",
+            "ChatMemberStatus.MEMBER",
+            "ChatMemberStatus.ADMINISTRATOR",
+            "ChatMemberStatus.OWNER",
+            "ChatMemberStatus.RESTRICTED"
+        ]
+
+        if status in allowed:
             return True
 
-    except UserNotParticipant:
         return False
 
-    except:
-        return False
+    except Exception as e:
 
-    return False
+        print(f"JOIN ERROR: {e}")
+
+        return False
 
 
 # =========================
