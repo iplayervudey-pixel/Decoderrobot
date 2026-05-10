@@ -140,11 +140,9 @@ async def start(client, message):
     )
 
     await message.reply_text(
-        "✅ Verifikasi berhasil.
-
-Silahkan gunakan bot dengan baik dan gunakan tombol di bawah untuk semua fitur bot.",
-        reply_markup=buttons
-    )
+    "✅ Verifikasi berhasil.\n\nSilahkan gunakan bot dengan baik dan gunakan tombol di bawah untuk semua fitur bot.",
+    reply_markup=buttons
+)
 
 
 # =========================
@@ -187,8 +185,7 @@ Terima kasih telah menggunakan bot.
 async def myid(client, message):
 
     await message.reply_text(
-        f"🆔 ID Kamu:
-`{message.from_user.id}`"
+        f"🆔 ID Kamu:\n`{message.from_user.id}`"
     )
 
 
@@ -219,9 +216,7 @@ async def upload(client, message):
     )
 
     await message.reply_text(
-        "📤 Silahkan kirim media sekarang.
-
-Jika sudah selesai upload tekan tombol ✅ Buat Code.",
+        "📤 Silahkan kirim media sekarang.\n\nJika sudah selesai upload tekan tombol ✅ Buat Code.",
         reply_markup=buttons
     )
 
@@ -245,9 +240,7 @@ async def save_media(client, message):
     total = len(user_uploads[user_id])
 
     await message.reply_text(
-        f"✅ Media berhasil ditambahkan
-
-📦 Total media sekarang: {total}"
+        f"✅ Media berhasil ditambahkan\n\n📦 Total media sekarang: {total}"
     )
 
 
