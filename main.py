@@ -13,6 +13,7 @@ import string
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
+
 FORCE_CHANNEL = os.getenv("FORCE_CHANNEL")
 DB_CHANNEL = os.getenv("DB_CHANNEL")
 
@@ -55,9 +56,11 @@ async def check_join(client, user_id):
     except:
         return False
 
+    return False
+
 
 # =========================
-# BOT COMMANDS
+# SET COMMANDS
 # =========================
 
 @app.on_message(filters.command("setcmd"))
@@ -89,7 +92,6 @@ async def start(client, message):
 
     joined = await check_join(client, user_id)
 
-    # BELUM JOIN
     if not joined:
 
         buttons = InlineKeyboardMarkup(
@@ -97,7 +99,7 @@ async def start(client, message):
                 [
                     InlineKeyboardButton(
                         "📢 Join Channel",
-                        url=f"https://t.me/{FORCE_CHANNEL.replace('@','')}"
+                        url=f"https://t.me/{FORCE_CHANNEL.replace('@', '')}"
                     )
                 ],
                 [
@@ -140,9 +142,9 @@ async def start(client, message):
     )
 
     await message.reply_text(
-    "✅ Verifikasi berhasil.\n\nSilahkan gunakan bot dengan baik dan gunakan tombol di bawah untuk semua fitur bot.",
-    reply_markup=buttons
-)
+        "✅ Verifikasi berhasil.\n\nSilahkan gunakan bot dengan baik dan gunakan tombol di bawah untuk semua fitur bot.",
+        reply_markup=buttons
+    )
 
 
 # =========================
@@ -253,10 +255,6 @@ async def callbacks(client, callback_query):
 
     user_id = callback_query.from_user.id
 
-    # =====================
-    # CEK JOIN
-    # =====================
-
     if callback_query.data == "cek_join":
 
         joined = await check_join(client, user_id)
@@ -289,9 +287,7 @@ async def callbacks(client, callback_query):
             )
 
             return await callback_query.message.edit_text(
-                "✅ Verifikasi berhasil.
-
-Silahkan gunakan bot dengan baik.",
+                "✅ Verifikasi berhasil.\n\nSilahkan gunakan bot dengan baik.",
                 reply_markup=buttons
             )
 
@@ -299,11 +295,6 @@ Silahkan gunakan bot dengan baik.",
             "❌ Kamu belum join channel",
             show_alert=True
         )
-
-
-    # =====================
-    # MENU BUTTONS
-    # =====================
 
     elif callback_query.data == "menu_upload":
 
@@ -331,13 +322,11 @@ Silahkan gunakan bot dengan baik.",
             reply_markup=buttons
         )
 
-
     elif callback_query.data == "menu_download":
 
         await callback_query.message.reply_text(
             "📥 Silahkan kirim code media terlebih dahulu."
         )
-
 
     elif callback_query.data == "menu_help":
 
@@ -345,25 +334,17 @@ Silahkan gunakan bot dengan baik.",
             "📖 Gunakan /upload untuk membuat code dan kirim code untuk download media."
         )
 
-
     elif callback_query.data == "menu_myid":
 
         await callback_query.message.reply_text(
-            f"🆔 ID Kamu:
-`{user_id}`"
+            f"🆔 ID Kamu:\n`{user_id}`"
         )
-
 
     elif callback_query.data == "add_media":
 
         await callback_query.answer(
             "📤 Silahkan kirim media lagi"
         )
-
-
-    # =====================
-    # BUAT CODE
-    # =====================
 
     elif callback_query.data == "make_code":
 
@@ -424,17 +405,12 @@ Silahkan gunakan bot dengan baik.",
         del user_uploads[user_id]
 
         await callback_query.message.reply_text(
-            f"✅ Code berhasil dibuat
-
-🔑 Code:
-`{final_code}`
-
-📦 Total File: {len(media_ids)}"
+            f"✅ Code berhasil dibuat\n\n🔑 Code:\n`{final_code}`\n\n📦 Total File: {len(media_ids)}"
         )
 
 
 # =========================
-# DOWNLOAD COMMAND
+# DOWNLOAD
 # =========================
 
 @app.on_message(filters.command("download"))
@@ -463,12 +439,7 @@ async def get_code(client, message):
     total_pages = (total_media + 9) // 10
 
     await message.reply_text(
-        f"✅ Code ditemukan
-
-📦 Total file: {total_media}
-📄 Total halaman: {total_pages}
-
-⬇️ Sedang menampilkan halaman pertama"
+        f"✅ Code ditemukan\n\n📦 Total file: {total_media}\n📄 Total halaman: {total_pages}\n\n⬇️ Sedang menampilkan halaman pertama"
     )
 
     await send_page(
@@ -501,8 +472,6 @@ async def send_page(client, message, media_ids, page, code):
 
     total_pages = (len(media_ids) + 9) // 10
 
-    buttons = []
-
     row = []
 
     if page > 0:
@@ -524,15 +493,10 @@ async def send_page(client, message, media_ids, page, code):
         )
 
     if row:
-        buttons.append(row)
-
-    if buttons:
 
         await message.reply_text(
-            f"✅ Menampilkan halaman {page+1}/{total_pages}
-
-📦 File {start+1}-{min(end, len(media_ids))}",
-            reply_markup=InlineKeyboardMarkup(buttons)
+            f"✅ Menampilkan halaman {page+1}/{total_pages}\n\n📦 File {start+1}-{min(end, len(media_ids))}",
+            reply_markup=InlineKeyboardMarkup([row])
         )
 
 
