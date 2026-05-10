@@ -1,15 +1,14 @@
 from pyrogram import Client, filters
-from pyrogram.errors import UserNotParticipant, FloodWait
-import asyncio
+from pyrogram.errors import UserNotParticipant
 import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
 
-# contoh:
-# FORCE_CHANNEL=-1001234567890
-FORCE_CHANNEL = int(os.getenv("FORCE_CHANNEL"))
+# USERNAME CHANNEL PUBLIC
+# contoh: @mychannel
+FORCE_CHANNEL = os.getenv("FORCE_CHANNEL")
 
 app = Client(
     "memory_bot",
@@ -54,12 +53,6 @@ async def start(client, message):
         await message.reply_text(
             "❌ Kamu belum join channel"
         )
-
-    except FloodWait as e:
-
-        print(f"FloodWait: {e.value}")
-
-        await asyncio.sleep(e.value)
 
     except Exception as e:
 
