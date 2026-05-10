@@ -4,6 +4,7 @@ from pyrogram.types import (
     InlineKeyboardButton,
     BotCommand
 )
+from pyrogram.errors import FloodWait
 
 import os
 import random
@@ -11,6 +12,7 @@ import string
 import asyncio
 import json
 
+# ================= ENV =================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
@@ -35,12 +37,14 @@ app = Client(
     in_memory=True
 )
 
+# ================= MEMORY =================
 user_uploads = {}
 
 # ================= CHECK JOIN =================
 async def check_join(client, user_id):
 
     try:
+
         member = await client.get_chat_member(
             FORCE_CHANNEL,
             user_id
@@ -86,7 +90,7 @@ def menu():
     ])
 
 
-# ================= COMMAND =================
+# ================= SET COMMAND =================
 @app.on_message(filters.command("setcmd"))
 async def setcmd(client, message):
 
@@ -145,18 +149,19 @@ Silahkan pilih menu dibawah
 @app.on_message(filters.command("help"))
 async def help_cmd(client, message):
 
-    text = """
+    await message.reply_text(
+        """
 <b>Cara Menggunakan Bot:</b>
 
 1. Klik /upload
-2. Kirim media
+2. Kirim media/file/video
 3. Klik tombol Done
 4. Copy code
-5. Kirim code untuk download file
-"""
+5. Kirim code untuk download
 
-    await message.reply_text(
-        text,
+Contoh code:
+<code>lisafilescode_1v_0p_0d_xxxxx</code>
+""",
         parse_mode=enums.ParseMode.HTML
     )
 
@@ -166,7 +171,11 @@ async def help_cmd(client, message):
 async def myid(client, message):
 
     await message.reply_text(
-        f"🆔 ID Anda:\n<code>{message.from_user.id}</code>",
+        f"""
+🆔 ID Anda:
+
+<code>{message.from_user.id}</code>
+""",
         parse_mode=enums.ParseMode.HTML
     )
 
@@ -177,10 +186,10 @@ async def download(client, message):
 
     await message.reply_text(
         """
-📥 Silahkan kirim code media
+📥 Kirim code media
 
 Contoh:
-<code>3V_5P_3B</code>
+<code>lisafilescode_1v_0p_0d_xxxxx</code>
 """,
         parse_mode=enums.ParseMode.HTML
     )
@@ -194,9 +203,9 @@ async def upload(client, message):
 
     await message.reply_text(
         """
-📤 Mode upload aktif
+📤 MODE UPLOAD AKTIF
 
-Sekarang kirim media/video/file
+Sekarang kirim media/file/video
 """,
         reply_markup=InlineKeyboardMarkup([
             [
@@ -258,7 +267,11 @@ async def save_media(client, message):
     except Exception as e:
 
         await message.reply_text(
-            f"❌ Error\n<code>{e}</code>",
+            f"""
+❌ Error
+
+<code>{e}</code>
+""",
             parse_mode=enums.ParseMode.HTML
         )
 
@@ -321,9 +334,9 @@ Silahkan pilih menu dibawah
 
         await callback_query.message.reply_text(
             """
-📤 Mode upload aktif
+📤 MODE UPLOAD AKTIF
 
-Sekarang kirim media/video/file
+Sekarang kirim media/file/video
 """,
             reply_markup=InlineKeyboardMarkup([
                 [
@@ -343,7 +356,7 @@ Sekarang kirim media/video/file
 📥 Kirim code media
 
 Contoh:
-<code>3V_5P_3B</code>
+<code>lisafilescode_1v_0p_0d_xxxxx</code>
 """,
             parse_mode=enums.ParseMode.HTML
         )
@@ -353,7 +366,7 @@ Contoh:
 
         await callback_query.message.reply_text(
             """
-<b>Cara Menggunakan:</b>
+<b>Cara Menggunakan Bot:</b>
 
 1. Upload media
 2. Klik Done
@@ -382,41 +395,70 @@ Contoh:
                 "❌ Belum ada media"
             )
 
-        # FORMAT CODE BARU
-        code = "_".join([
-            ''.join(random.choices(
-                string.ascii_uppercase + string.digits,
-                k=2
-            ))
-            for _ in range(3)
-        ])
+        # ================= HITUNG MEDIA =================
+        video_count = 0
+        photo_count = 0
+        doc_count = 0
 
-        # PASTIKAN TIDAK DUPLIKAT
-        while code in media_db:
+        for msg_id in media_ids:
 
-            code = "_".join([
-                ''.join(random.choices(
-                    string.ascii_uppercase + string.digits,
-                    k=2
-                ))
-                for _ in range(3)
-            ])
+            try:
 
+                msg = await client.get_messages(
+                    DB_CHANNEL,
+                    msg_id
+                )
+
+                if msg.video:
+                    video_count += 1
+
+                elif msg.photo:
+                    photo_count += 1
+
+                elif (
+                    msg.document or
+                    msg.audio or
+                    msg.animation
+                ):
+                    doc_count += 1
+
+            except:
+                pass
+
+        # ================= RANDOM STRING =================
+        random_string = ''.join(
+            random.choices(
+                string.ascii_lowercase + string.digits,
+                k=12
+            )
+        )
+
+        # ================= FINAL CODE =================
+        code = (
+            f"lisafilescode_"
+            f"{video_count}v_"
+            f"{photo_count}p_"
+            f"{doc_count}d_"
+            f"{random_string}"
+        )
+
+        # ================= SAVE =================
         media_db[code] = media_ids
 
         with open(DB_FILE, "w") as f:
             json.dump(media_db, f)
 
+        # ================= DELETE SESSION =================
         del user_uploads[user_id]
 
         await callback_query.message.reply_text(
             f"""
 ✅ Code berhasil dibuat
 
-🔑 Code:
+🔑 CODE:
 <code>{code}</code>
 
-📥 Kirim code tersebut untuk download file
+📥 Kirim code tersebut untuk download media
 """,
             parse_mode=enums.ParseMode.HTML
         )
@@ -428,7 +470,6 @@ async def get_code(client, message):
 
     text = message.text.strip()
 
-    # BERSIHKAN SPASI
     text = text.replace(" ", "")
 
     found_code = None
@@ -466,13 +507,52 @@ async def send_page(client, message, media_ids, page, code):
         len(media_ids) + per_page - 1
     ) // per_page
 
-    # KIRIM MEDIA
-    await client.copy_media_group(
-        chat_id=message.chat.id,
-        from_chat_id=DB_CHANNEL,
-        message_ids=current_ids
-    )
+    # ================= BOT USERNAME =================
+    bot_username = (await client.get_me()).username
 
+    # ================= KIRIM MEDIA =================
+    for index, msg_id in enumerate(current_ids):
+
+        try:
+
+            # MEDIA TERAKHIR ADA CAPTION
+            if index == len(current_ids) - 1:
+
+                await client.copy_message(
+                    chat_id=message.chat.id,
+                    from_chat_id=DB_CHANNEL,
+                    message_id=msg_id,
+                    caption=f"""
+<b>📂 Halaman {page+1}/{total_pages}</b>
+<b>📦 Total File:</b> {len(media_ids)}
+
+<a href="https://t.me/{bot_username}">
+🤖 Klik masuk bot
+</a>
+""",
+                    parse_mode=enums.ParseMode.HTML
+                )
+
+            else:
+
+                await client.copy_message(
+                    chat_id=message.chat.id,
+                    from_chat_id=DB_CHANNEL,
+                    message_id=msg_id
+                )
+
+            # ANTI FLOOD
+            await asyncio.sleep(0.8)
+
+        except FloodWait as e:
+
+            await asyncio.sleep(e.value)
+
+        except Exception as e:
+
+            print(e)
+
+    # ================= BUTTON =================
     buttons = []
 
     row = []
@@ -487,7 +567,9 @@ async def send_page(client, message, media_ids, page, code):
         )
 
         if len(row) == 5:
+
             buttons.append(row)
+
             row = []
 
     if row:
@@ -516,6 +598,7 @@ async def send_page(client, message, media_ids, page, code):
     if nav:
         buttons.append(nav)
 
+    # ================= PAGE INFO =================
     await message.reply_text(
         f"""
 📂 Halaman: {page+1}/{total_pages}
