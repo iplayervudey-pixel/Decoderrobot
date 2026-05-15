@@ -167,7 +167,7 @@ async def help_cmd(client, message):
 5. Kirim code untuk download
 
 Contoh:
-<code>files_1v_0p_0d_xxxxx</code>
+<code>xynq2bot_1v_0p_0d_xxxxx</code>
 """,
         parse_mode=enums.ParseMode.HTML
     )
@@ -196,7 +196,7 @@ async def download(client, message):
 📥 Kirim code media
 
 Contoh:
-<code>files_1v_0p_0d_xxxxx</code>
+<code>xynq2bot_1v_0p_0d_xxxxx</code>
 """,
         parse_mode=enums.ParseMode.HTML
     )
@@ -385,7 +385,7 @@ Sekarang kirim media/file/video
 📥 Kirim code media
 
 Contoh:
-<code>files_1v_0p_0d_xxxxx</code>
+<code>xynq2bot_1v_0p_0d_xxxxx</code>
 """,
             parse_mode=enums.ParseMode.HTML
         )
@@ -460,7 +460,7 @@ Contoh:
             )
         )
 
-        prefix = "files"
+        prefix = "xynq2bot"
 
         code = (
             f"{prefix}_"
