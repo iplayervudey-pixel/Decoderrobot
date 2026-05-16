@@ -196,7 +196,7 @@ async def download(client, message):
 📥 Kirim code media
 
 Contoh:
-<code>xynq2bot_1v_0p_0d_xxxxx</code>
+<code>tzyfilebot_1v_0p_0d_xxxxx</code>
 """,
         parse_mode=enums.ParseMode.HTML
     )
@@ -295,7 +295,7 @@ Klik DONE jika selesai upload
             f"""
 ❌ Error
 
-<code>{e}</code>
+<code>{'e'}</code>
 """,
             parse_mode=enums.ParseMode.HTML
         )
@@ -385,7 +385,7 @@ Sekarang kirim media/file/video
 📥 Kirim code media
 
 Contoh:
-<code>xynq2bot_1v_0p_0d_xxxxx</code>
+<code>tzyfilebot_1v_0p_0d_xxxxx</code>
 """,
             parse_mode=enums.ParseMode.HTML
         )
@@ -460,7 +460,7 @@ Contoh:
             )
         )
 
-        prefix = "xynq2bot"
+        prefix = "tzyfilebot"
 
         code = (
             f"{prefix}_"
