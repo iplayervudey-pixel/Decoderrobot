@@ -191,7 +191,7 @@ async def help_cmd(client, message):
 5. Kirim code untuk download
 
 Contoh:
-<code>xynq2bot_1v_0p_0d_xxxxx</code>
+<code>tzyfilebot_1v_0p_0d_xxxxx</code>
 """,
         parse_mode=enums.ParseMode.HTML
     )
