@@ -72,30 +72,53 @@ async def check_join(client, user_id):
 
 # ================= MENU =================
 def menu():
+def menu():
 
     return InlineKeyboardMarkup([
+
         [
             InlineKeyboardButton(
-                "📤 Upload",
-                callback_data="menu_upload"
-            ),
-            InlineKeyboardButton(
-                "📥 Download",
-                callback_data="menu_download"
+                "Start🚀",
+                callback_data="home"
             )
         ],
+
         [
             InlineKeyboardButton(
-                "🆘 Help",
-                callback_data="menu_help"
+                "Trending Code🔥",
+                callback_data="trend"
             ),
             InlineKeyboardButton(
-                "🆔 My ID",
-                callback_data="menu_myid"
+                "New Code🆕",
+                callback_data="new"
+            )
+        ],
+
+        [
+            InlineKeyboardButton(
+                "My Code📂",
+                callback_data="mycode"
+            ),
+
+            InlineKeyboardButton(
+                "My Account🧑‍🏫",
+                callback_data="account"
+            )
+        ],
+
+        [
+            InlineKeyboardButton(
+                "Help📃",
+                callback_data="help"
+            ),
+
+            InlineKeyboardButton(
+                "Admin🧑‍💼",
+                callback_data="admin"
             )
         ]
-    ])
 
+    ])
 
 # ================= SET COMMAND =================
 @app.on_message(filters.command("setcmd"))
@@ -144,13 +167,14 @@ async def start(client, message):
 
     await message.reply_text(
         """
-✅ Verifikasi berhasil
+Selamat Datang Di TZY BOT
 
-Silahkan pilih menu dibawah
+Silakan Kirim Media Dan Saya Akan Memberimu Sebuah Code😉
+
+Jika Ada Code Silahkan Kirim Ke Saya Dan Saya Memberi Mu Media Yang Menarik 😋
 """,
         reply_markup=menu()
     )
-
 
 # ================= HELP =================
 @app.on_message(filters.command("help"))
@@ -195,8 +219,7 @@ async def download(client, message):
         """
 📥 Kirim code media
 
-Contoh:
-<code>tzyfilebot_1v_0p_0d_xxxxx</code>
+tzyfilebot_1v_0p_0d_xxxxx</code>
 """,
         parse_mode=enums.ParseMode.HTML
     )
@@ -310,6 +333,21 @@ async def callbacks(client, callback_query):
     data = callback_query.data
     user_id = callback_query.from_user.id
 
+    if data == "home":
+
+        return await callback_query.message.edit_text(
+"""
+Selamat Datang Di TZY BOT
+
+Silakan Kirim Media Dan Saya Akan Memberimu Sebuah Code😉
+
+Jika Ada Code Silahkan Kirim Ke Saya Dan Saya Memberi Mu Media Yang Menarik 😋
+""",
+            reply_markup=menu()
+        )
+
+    if data.startswith("page|"):
+        ...
     # ================= PAGE =================
     if data.startswith("page|"):
 
