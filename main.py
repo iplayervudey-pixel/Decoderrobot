@@ -210,6 +210,7 @@ async def myid(client, message):
     )
 
 
+# ================= NEW =================
 elif data == "new":
 
     latest = list(media_db.keys())
@@ -307,7 +308,6 @@ elif data == "new":
             buttons
         )
     )
-
 # ================= AUTO RECEIVE =================
 elif data=="home":
 
