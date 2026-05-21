@@ -286,11 +286,11 @@ async def callbacks(client, callback_query):
     user_id = callback_query.from_user.id
 
     # ================= HOME =================
-    if data == "home":
+if data == "home":
 
-        user_uploads[user_id] = []
+    user_uploads[user_id] = []
 
-        msg = await callback_query.message.edit_text(
+    msg = await callback_query.message.edit_text(
 """
 📥 MODE AKTIF
 
@@ -300,17 +300,26 @@ Silakan kirim media/video/file
 
 📌 Anda juga bisa tempel code
 """,
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton(
-                        "✅ Create",
-                        callback_data="make_code"
-                    )
-                ]
-            ])
-        )
+        reply_markup=InlineKeyboardMarkup([
 
-        upload_status_message[user_id] = msg.id
+            [
+                InlineKeyboardButton(
+                    "✅ Create",
+                    callback_data="make_code"
+                )
+            ],
+
+            [
+                InlineKeyboardButton(
+                    "🏠 Halaman Utama",
+                    callback_data="start"
+                )
+            ]
+
+        ])
+    )
+
+    upload_status_message[user_id] = msg.id
 
     # ================= CHECK JOIN =================
     elif data == "cek_join":
