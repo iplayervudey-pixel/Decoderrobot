@@ -592,6 +592,306 @@ Silakan kirim media/video/file
             f"{random_string}"
         )
 
+# ================= CALLBACK =================
+@app.on_callback_query()
+async def callbacks(client, callback_query):
+
+    await callback_query.answer()
+
+    data = callback_query.data
+    user_id = callback_query.from_user.id
+
+    # ================= HOME / START MODE =================
+    if data == "home":
+
+        user_uploads[user_id] = []
+
+        await callback_query.message.edit_text(
+"""
+📥 MODE AKTIF
+
+Silakan kirim media/video/file
+
+📌 Anda juga bisa tempel code
+
+📦 Total media diterima: 0
+""",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "✅ Create",
+                        callback_data="make_code"
+                    )
+                ]
+            ])
+        )
+
+        upload_status_message[user_id] = callback_query.message.id
+
+    # ================= CHECK JOIN =================
+    elif data == "cek_join":
+
+        joined = await check_join(client, user_id)
+
+        if not joined:
+
+            return await callback_query.answer(
+                "❌ Anda belum join channel",
+                show_alert=True
+            )
+
+        user_uploads[user_id] = []
+
+        await callback_query.message.edit_text(
+"""
+✅ Verifikasi berhasil
+
+📥 MODE AKTIF
+
+Silakan kirim media/video/file
+
+📌 Anda juga bisa tempel code
+""",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "✅ Create",
+                        callback_data="make_code"
+                    )
+                ]
+            ])
+        )
+
+        upload_status_message[user_id] = callback_query.message.id
+
+    # ================= NEW CODE =================
+    elif data == "new":
+
+        latest = [
+            x for x in media_db.keys()
+            if x != "views"
+        ]
+
+        latest.reverse()
+
+        text = "🆕 NEW CODE\n\n"
+
+        if not latest:
+
+            text += "Belum ada code"
+
+        else:
+
+            for no, code in enumerate(latest[:20], start=1):
+
+                text += f"{no}. <code>{code}</code>\n"
+
+        await callback_query.message.edit_text(
+            text,
+            parse_mode=enums.ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "🏠 Kembali",
+                        callback_data="home"
+                    )
+                ]
+            ])
+        )
+
+    # ================= TRENDING =================
+    elif data == "trend":
+
+        ranked = sorted(
+            media_db["views"].items(),
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        text = "🔥 TRENDING CODE\n\n"
+
+        if not ranked:
+
+            text += "Belum ada code trending"
+
+        else:
+
+            for no, (code, total) in enumerate(ranked[:20], start=1):
+
+                text += (
+                    f"{no}. <code>{code}</code>\n"
+                    f"👁 Views: {total}\n\n"
+                )
+
+        await callback_query.message.edit_text(
+            text,
+            parse_mode=enums.ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "🏠 Kembali",
+                        callback_data="home"
+                    )
+                ]
+            ])
+        )
+
+    # ================= MY CODE =================
+    elif data == "mycode":
+
+        text = "📂 MY CODE\n\n"
+
+        found = False
+
+        for code in media_db.keys():
+
+            if code == "views":
+                continue
+
+            text += f"• <code>{code}</code>\n"
+            found = True
+
+        if not found:
+            text += "Belum ada code"
+
+        await callback_query.message.edit_text(
+            text,
+            parse_mode=enums.ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "🏠 Kembali",
+                        callback_data="home"
+                    )
+                ]
+            ])
+        )
+
+    # ================= ACCOUNT =================
+    elif data == "account":
+
+        await callback_query.message.edit_text(
+f"""
+🧑‍🏫 MY ACCOUNT
+
+👤 Nama:
+{callback_query.from_user.first_name}
+
+🆔 ID:
+<code>{user_id}</code>
+""",
+            parse_mode=enums.ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "🏠 Kembali",
+                        callback_data="home"
+                    )
+                ]
+            ])
+        )
+
+    # ================= HELP =================
+    elif data == "help":
+
+        await callback_query.message.edit_text(
+"""
+📃 HELP MENU
+
+1. Klik Start
+2. Kirim media
+3. Klik Create
+4. Copy code
+5. Tempel code untuk download
+""",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "🏠 Kembali",
+                        callback_data="home"
+                    )
+                ]
+            ])
+        )
+
+    # ================= ADMIN =================
+    elif data == "admin":
+
+        await callback_query.message.edit_text(
+"""
+🧑‍💼 ADMIN BOT
+
+Developer:
+@username
+
+Bot Version:
+1.0
+""",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "🏠 Kembali",
+                        callback_data="home"
+                    )
+                ]
+            ])
+        )
+
+    # ================= MAKE CODE =================
+    elif data == "make_code":
+
+        media_ids = user_uploads.get(user_id, [])
+
+        if not media_ids:
+
+            return await callback_query.message.reply_text(
+                "❌ Belum ada media"
+            )
+
+        video_count = 0
+        photo_count = 0
+        doc_count = 0
+
+        for msg_id in media_ids:
+
+            try:
+
+                msg = await client.get_messages(
+                    DB_CHANNEL,
+                    msg_id
+                )
+
+                if msg.video:
+                    video_count += 1
+
+                elif msg.photo:
+                    photo_count += 1
+
+                elif (
+                    msg.document or
+                    msg.audio or
+                    msg.animation
+                ):
+                    doc_count += 1
+
+            except:
+                pass
+
+        random_string = ''.join(
+            random.choices(
+                string.ascii_lowercase + string.digits,
+                k=12
+            )
+        )
+
+        code = (
+            f"tzyfilebot_"
+            f"{video_count}v_"
+            f"{photo_count}p_"
+            f"{doc_count}d_"
+            f"{random_string}"
+        )
+
         media_db[code] = media_ids
 
         with open(DB_FILE, "w") as f:
@@ -603,7 +903,7 @@ Silakan kirim media/video/file
             del upload_status_message[user_id]
 
         await callback_query.message.reply_text(
-            f"""
+f"""
 ✅ Code berhasil dibuat
 
 🔑 CODE:
