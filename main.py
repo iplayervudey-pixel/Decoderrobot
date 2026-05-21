@@ -270,12 +270,6 @@ Klik CREATE jika selesai upload
             await message.delete()
         except:
             pass
-
-    except Exception as e:
-
-        print(e)
-
-
 # ================= CALLBACK =================
 @app.on_callback_query()
 async def callbacks(client, callback_query):
@@ -350,6 +344,31 @@ Silahkan pilih menu dibawah
             "❌ Anda belum join channel",
             show_alert=True
         )
+    except Exception as e:
+
+        print(e)
+
+
+# ================= CALLBACK =================
+@app.on_callback_query()
+async def callbacks(client, callback_query):
+
+    await callback_query.answer()
+
+    data = callback_query.data
+    user_id = callback_query.from_user.id
+
+    # ================= HOME =================
+    if data == "home":
+
+        user_uploads[user_id] = []
+
+        msg = await callback_query.message.edit_text(
+"""
+📥 MODE AKTIF
+
+Silakan kirim media/video/file
+
     # ================= NEW CODE =================
     elif data == "new":
 
