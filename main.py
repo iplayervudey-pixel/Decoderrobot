@@ -211,47 +211,134 @@ async def myid(client, message):
     )
 
 
-# ================= DOWNLOAD =================
-@app.on_message(filters.command("download"))
-async def download(client, message):
+elif data == "new":
 
-    await message.reply_text(
-        """
-📥 Kirim code media
+    latest = list(media_db.keys())
 
-tzyfilebot_1v_0p_0d_xxxxx</code>
-""",
-        parse_mode=enums.ParseMode.HTML
+    latest.reverse()
+
+    per_page = 10
+    page = 0
+
+    total_pages = (
+        len(latest)+per_page-1
+    )//per_page
+
+    current = latest[
+        page*per_page:
+        (page+1)*per_page
+    ]
+
+    text="🆕 New Code\n\n"
+
+    if not current:
+
+        text+="Belum ada code terbaru"
+
+    else:
+
+        for x,code in enumerate(
+            current,
+            start=1
+        ):
+
+            text+=(
+                f"{x}. "
+                f"<code>{code}</code>\n"
+            )
+
+    buttons=[]
+
+    nav=[]
+
+    nav.append(
+        InlineKeyboardButton(
+            "⬅️ Prev",
+            callback_data="none"
+        )
     )
 
+    for i in range(
+        min(total_pages,4)
+    ):
 
-# ================= UPLOAD =================
-@app.on_message(filters.command("upload"))
-async def upload(client, message):
+        nav.append(
+            InlineKeyboardButton(
+                str(i+1),
+                callback_data=f"newpage|{i}"
+            )
+        )
 
-    user_id = message.from_user.id
-
-    user_uploads[user_id] = []
-
-    msg = await message.reply_text(
-        """
-📤 MODE UPLOAD AKTIF
-
-Sekarang kirim media/file/video
-
-📦 Total media: 0
-""",
-        reply_markup=InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(
-                    "✅ Done",
-                    callback_data="make_code"
-                )
-            ]
-        ])
+    nav.append(
+        InlineKeyboardButton(
+            "Next ➡️",
+            callback_data="newpage|1"
+        )
     )
 
-    upload_status_message[user_id] = msg.id
+    buttons.append(nav)
+
+    buttons.append([
+
+        InlineKeyboardButton(
+            "📢 Channel Update",
+            url="https://t.me/USERNAME_CHANNEL"
+        ),
+
+        InlineKeyboardButton(
+            "🤖 Channel Bot",
+            url="https://t.me/USERNAME_BOT"
+        )
+
+    ])
+
+    buttons.append([
+
+        InlineKeyboardButton(
+            "🏠 Kembali",
+            callback_data="home"
+        )
+
+    ])
+
+    await callback_query.message.edit_text(
+        text,
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup(
+            buttons
+        )
+    )
+
+# ================= AUTO RECEIVE =================
+elif data=="home":
+
+    user_uploads[user_id]=[]
+
+    msg=await callback_query.message.reply_text(
+"""
+📥 Mode Aktif
+
+Silakan kirim media/video/file
+
+Media akan otomatis diterima
+
+📦 Total media diterima: 0
+""",
+
+reply_markup=InlineKeyboardMarkup([
+
+[
+InlineKeyboardButton(
+"Create",
+callback_data="make_code"
+)
+]
+
+])
+
+)
+
+    upload_status_message[user_id]=msg.id
 
 
 # ================= SAVE MEDIA =================
@@ -415,18 +502,128 @@ Sekarang kirim media/file/video
 
         upload_status_message[user_id] = msg.id
 
-    # ================= MENU DOWNLOAD =================
-    elif data == "menu_download":
+    # ================= TRENDING =================
+elif data.startswith("trend"):
 
-        await callback_query.message.reply_text(
-            """
-📥 Kirim code media
+    if "views" not in media_db:
+        media_db["views"] = {}
 
-Contoh:
-<code>tzyfilebot_1v_0p_0d_xxxxx</code>
-""",
-            parse_mode=enums.ParseMode.HTML
+    page = 0
+
+    if "|" in data:
+        page = int(data.split("|")[1])
+
+    ranked = sorted(
+        media_db["views"].items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    per_page = 10
+
+    total_pages = max(
+        1,
+        (len(ranked)+per_page-1)//per_page
+    )
+
+    start = page*per_page
+    end = start+per_page
+
+    current = ranked[start:end]
+
+    text = (
+        f"🔥 Trending Code\n"
+        f"📄 Halaman {page+1}/{total_pages}\n\n"
+    )
+
+    if not current:
+
+        text += (
+            "Belum ada code trending\n"
+            "Code populer akan muncul disini"
         )
+
+    else:
+
+        for no,(code,view) in enumerate(
+            current,
+            start=start+1
+        ):
+
+            text += (
+                f"{no}. "
+                f"<code>{code}</code>\n"
+                f"👁 Dilihat: {view}\n\n"
+            )
+
+    nav=[]
+
+    if page>0:
+
+        nav.append(
+            InlineKeyboardButton(
+                "⬅️ Prev",
+                callback_data=f"trend|{page-1}"
+            )
+        )
+
+    for i in range(
+        min(total_pages,3)
+    ):
+
+        icon="🔴"
+
+        if i==page:
+            icon="🔵"
+
+        nav.append(
+            InlineKeyboardButton(
+                f"{i+1}{icon}",
+                callback_data=f"trend|{i}"
+            )
+        )
+
+    if page<total_pages-1:
+
+        nav.append(
+            InlineKeyboardButton(
+                "Next ➡️",
+                callback_data=f"trend|{page+1}"
+            )
+        )
+
+    buttons=[nav]
+
+    buttons.append([
+
+        InlineKeyboardButton(
+            "📢 Channel Update",
+            url="https://t.me/CHANNELMU"
+        ),
+
+        InlineKeyboardButton(
+            "🤖 Channel Bot",
+            url="https://t.me/NAMABOT"
+        )
+
+    ])
+
+    buttons.append([
+
+        InlineKeyboardButton(
+            "🏠 Kembali",
+            callback_data="home"
+        )
+
+    ])
+
+    await callback_query.message.edit_text(
+        text,
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup(
+            buttons
+        )
+    )
 
     # ================= MENU HELP =================
     elif data == "menu_help":
