@@ -286,18 +286,31 @@ async def callbacks(client, callback_query):
     user_id = callback_query.from_user.id
 
     # ================= HOME =================
-    if data == "home":
+if data == "home":
 
-        return await callback_query.message.edit_text(
+    user_uploads[user_id] = []
+
+    msg = await callback_query.message.edit_text(
 """
-Selamat Datang Di TZY BOT
+📥 MODE AKTIF
 
-Silakan Kirim Media Dan Saya Akan Memberimu Sebuah Code😉
+Silakan kirim media/video/file
 
-Jika Ada Code Silahkan Kirim Ke Saya Dan Saya Memberi Mu Media Yang Menarik 😋
+📦 Total media diterima: 0
+
+📌 Anda juga bisa tempel code
 """,
-            reply_markup=menu()
-        )
+        reply_markup=InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    "✅ Create",
+                    callback_data="make_code"
+                )
+            ]
+        ])
+    )
+
+    upload_status_message[user_id] = msg.id
 
     # ================= CHECK JOIN =================
     elif data == "cek_join":
@@ -396,6 +409,109 @@ Silahkan pilih menu dibawah
             ])
         )
 
+# ================= MY CODE =================
+    elif data == "mycode":
+
+        text = "📂 MY CODE\n\n"
+
+        found = False
+
+        for code in media_db.keys():
+
+            if code == "views":
+                continue
+
+            text += f"• <code>{code}</code>\n"
+            found = True
+
+        if not found:
+            text += "Belum ada code"
+
+        await callback_query.message.edit_text(
+            text,
+            parse_mode=enums.ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "🏠 Kembali",
+                        callback_data="home"
+                    )
+                ]
+            ])
+        )
+
+
+    # ================= ACCOUNT =================
+    elif data == "account":
+
+        await callback_query.message.edit_text(
+            f"""
+🧑‍🏫 MY ACCOUNT
+
+👤 Nama:
+{callback_query.from_user.first_name}
+
+🆔 ID:
+<code>{user_id}</code>
+""",
+            parse_mode=enums.ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "🏠 Kembali",
+                        callback_data="home"
+                    )
+                ]
+            ])
+        )
+
+
+    # ================= HELP =================
+    elif data == "help":
+
+        await callback_query.message.edit_text(
+"""
+📃 HELP MENU
+
+1. Klik Start
+2. Kirim media
+3. Klik Create
+4. Copy code
+5. Tempel code untuk download
+""",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "🏠 Kembali",
+                        callback_data="home"
+                    )
+                ]
+            ])
+        )
+
+
+    # ================= ADMIN =================
+    elif data == "admin":
+
+        await callback_query.message.edit_text(
+"""
+🧑‍💼 ADMIN BOT
+
+Developer:
+@username
+
+Bot Version:
+1.0
+""",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "🏠 Kembali",
+                        callback_data="home"
+                    )
+                ]
+            ])
+    )
     # ================= UPLOAD MODE =================
     elif data == "home":
 
