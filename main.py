@@ -477,11 +477,33 @@ Silakan kirim media/video/file
         )
 
 
-    # ================= ACCOUNT =================
-    elif data == "account":
 
-        await callback_query.message.edit_text(
-            f"""
+    # ================= HELP =================
+    elif data =# ================= ACCOUNT =================
+elif data == "account":
+
+    # USERNAME
+    username = callback_query.from_user.username
+
+    if username:
+        username = f"@{username}"
+    else:
+        username = "Tidak ada"
+
+    # STATUS USER
+    if user_id in user_uploads:
+        status_user = "🟢 Upload Mode Aktif"
+    else:
+        status_user = "🔴 Tidak Upload"
+
+    # TOTAL CODE
+    total_code = len([
+        x for x in media_db.keys()
+        if x != "views"
+    ])
+
+    await callback_query.message.edit_text(
+f"""
 🧑‍🏫 MY ACCOUNT
 
 👤 Nama:
@@ -489,21 +511,26 @@ Silakan kirim media/video/file
 
 🆔 ID:
 <code>{user_id}</code>
+
+🤖 Username:
+{username}
+
+📦 Total Code:
+<code>{total_code}</code>
+
+📡 Status:
+{status_user}
 """,
-            parse_mode=enums.ParseMode.HTML,
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton(
-                        "🏠 Kembali",
-                        callback_data="home"
-                    )
-                ]
-            ])
-        )
-
-
-    # ================= HELP =================
-    elif data == "help":
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    "🏠 Kembali",
+                    callback_data="home"
+                )
+            ]
+        ])
+    )= "help":
 
         await callback_query.message.edit_text(
 """
