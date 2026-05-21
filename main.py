@@ -72,7 +72,6 @@ async def check_join(client, user_id):
 
 # ================= MENU =================
 def menu():
-def menu():
 
     return InlineKeyboardMarkup([
 
