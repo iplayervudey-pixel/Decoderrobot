@@ -312,7 +312,7 @@ Silakan kirim media/video/file
             [
                 InlineKeyboardButton(
                     "🏠 Halaman Utama",
-                    callback_data="start"
+                    callback_data="mainmenu"
                 )
             ]
 
@@ -520,6 +520,17 @@ Bot Version:
                     )
                 ]
             ])
+    )
+    # ================= MAIN MENU =================
+elif data == "mainmenu":
+
+    await callback_query.message.edit_text(
+"""
+Selamat Datang Di TZY BOT
+
+Silakan Pilih Menu Dibawah
+""",
+        reply_markup=menu()
     )
     # ================= UPLOAD MODE =================
     elif data == "home":
