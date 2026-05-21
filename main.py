@@ -285,41 +285,7 @@ async def callbacks(client, callback_query):
     data = callback_query.data
     user_id = callback_query.from_user.id
 
-    # ================= HOME =================
-if data == "home":
-
-    user_uploads[user_id] = []
-
-    msg = await callback_query.message.edit_text(
-"""
-📥 MODE AKTIF
-
-Silakan kirim media/video/file
-
-📦 Total media diterima: 0
-
-📌 Anda juga bisa tempel code
-""",
-        reply_markup=InlineKeyboardMarkup([
-
-            [
-                InlineKeyboardButton(
-                    "✅ Create",
-                    callback_data="make_code"
-                )
-            ],
-
-            [
-                InlineKeyboardButton(
-                    "🏠 Halaman Utama",
-                    callback_data="mainmenu"
-                )
-            ]
-
-        ])
-    )
-
-    upload_status_message[user_id] = msg.id
+    
 
     # ================= CHECK JOIN =================
     elif data == "cek_join":
@@ -342,6 +308,36 @@ Silahkan pilih menu dibawah
             show_alert=True
         )
 
+# ================= HOME =================
+if data == "home":
+
+    user_uploads[user_id] = []
+
+    msg = await callback_query.message.edit_text(
+        "MODE AKTIF",
+        reply_markup=InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    "✅ Create",
+                    callback_data="make_code"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "🏠 Halaman Utama",
+                    callback_data="mainmenu"
+                )
+            ]
+        ])
+    )
+
+# ================= MAIN MENU =================
+elif data == "mainmenu":
+
+    await callback_query.message.edit_text(
+        "Menu Utama",
+        reply_markup=menu()
+)
     # ================= NEW CODE =================
     elif data == "new":
 
@@ -521,17 +517,7 @@ Bot Version:
                 ]
             ])
     )
-    # ================= MAIN MENU =================
-elif data == "mainmenu":
-
-    await callback_query.message.edit_text(
-"""
-Selamat Datang Di TZY BOT
-
-Silakan Pilih Menu Dibawah
-""",
-        reply_markup=menu()
-    )
+    
     # ================= UPLOAD MODE =================
     elif data == "home":
 
